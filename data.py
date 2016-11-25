@@ -26,6 +26,8 @@ class Data:
 	train = None
 	test = None
 
+	batch_iter = 0
+
 	def __init__(self,
 				 word_vec_dir='data/embedding-results/sswe-h.txt',
 				 train_data_dir='data/acl-14-short-data/train.raw',
@@ -33,6 +35,7 @@ class Data:
 		self.word_vec_dir = word_vec_dir
 		self.train_data_dir = train_data_dir
 		self.test_data_dir = test_data_dir
+		batch_iter = 0
 
 	# reading small data-set for testing
 	def set_as_test(self):
@@ -126,6 +129,7 @@ class Data:
 		right_input_vector = []
 		seq_length_left = []
 		seq_length_right = []
+		labels = []
 
 		# convert words into word-vectors
 		for text in text_data['left_text']:
@@ -170,11 +174,19 @@ class Data:
 			for i in range(len(seq), max_length_right):
 				seq.append([float(0) for _ in range(self.vector_dim)])
 
+		for label in text_data['labels']:
+			if label == -1:
+				labels.append([1,0,0])
+			elif label == 0:
+				labels.append([0,1,0])
+			else:
+				labels.append([0,0,1])
+
 		return {'left_input': np.array(left_input_vector, dtype=float),
 				'right_input': np.array(right_input_vector, dtype=float),
-				'left_seq_length': np.array(seq_length_left, dtype=int),
-				'right_seq_length': np.array(seq_length_right, dtype=int),
-				'labels': np.array(text_data['labels'], dtype=int)}
+				'left_seq_length': np.array(seq_length_left, dtype=np.int32),
+				'right_seq_length': np.array(seq_length_right, dtype=np.int32),
+				'labels': np.array(labels, dtype=float)}
 
 	def get_data(self):
 		word_vector = self.read_word_vector()
@@ -182,3 +194,19 @@ class Data:
 										  word_vector)
 		self.train = self.word_to_vec(self.read_text_data(data_type='train'),
 										   word_vector)
+
+	def get_next_batch(self, data_set, batch_size):
+		length = len(data_set['labels'])
+		batch_iter = self.batch_iter
+		ret_data = {
+			'left_input': data_set['left_input'][batch_iter : batch_iter+batch_size],
+			'right_input': data_set['right_input'][batch_iter : batch_iter+batch_size],
+			'left_seq_length': data_set['left_seq_length'][batch_iter : batch_iter+batch_size],
+			'right_seq_length': data_set['right_seq_length'][batch_iter : batch_iter+batch_size],
+			'labels': data_set['labels'][batch_iter : batch_iter+batch_size]
+		}
+		self.batch_iter += batch_size
+		if self.batch_iter > length:
+			self.batch_iter = 0
+		return ret_data
+
