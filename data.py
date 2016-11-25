@@ -1,3 +1,7 @@
+'''
+
+'''
+
 import tensorflow as tf 
 import numpy as np 
 
@@ -83,6 +87,7 @@ class Data:
 					 'targets': [],
 					 'labels': []}
 
+		print('loading text-data from ' + path + '...')
 		with open(path, 'r') as file:
 			while True:
 				text = file.readline()
@@ -114,11 +119,15 @@ class Data:
 
 	def word_to_vec(self, text_data, word_vector):
 		'''
+			replacing words by vectors and padding the sequence length with zero vector
 			returning input vector with two directions
 		'''
 		left_input_vector = []
 		right_input_vector = []
+		seq_length_left = []
+		seq_length_right = []
 
+		# convert words into word-vectors
 		for text in text_data['left_text']:
 			input_vec = []
 			for word in text:
@@ -128,11 +137,12 @@ class Data:
 					input_vec.append(word_vector['<unk>'])
 			left_input_vector.append(input_vec)
 
-
-		print(len(max(left_input_vector)))
-
-		max_length_left = len(max(left_input_vector))
-		print('MAX_LENGTH ' + str(max_length_left))
+		# calculating the max length of the text ans generating seq_length vector
+		max_length_left = 0
+		for seq in left_input_vector:
+			length = len(seq)
+			seq_length_left.append(length)
+			max_length_left = max(max_length_left, length)
 
 		self.max_length_left = max_length_left
 		for seq in left_input_vector:
@@ -149,24 +159,22 @@ class Data:
 					input_vec.append(word_vector['<unk>'])
 			right_input_vector.append(input_vec)
 
+		max_length_right = 0
+		for seq in right_input_vector:
+			length = len(seq)
+			seq_length_right.append(length)
+			max_length_right = max(max_length_right, length)
 
-		max_length_right = len(max(left_input_vector))
 		self.max_length_right = max_length_right
 		for seq in right_input_vector:
 			for i in range(len(seq), max_length_right):
 				seq.append([float(0) for _ in range(self.vector_dim)])
 
-		for seq in left_input_vector:
-			print(len(seq))
-
-		print('---------------------------------')
-
-		for seq in right_input_vector:
-			print(len(seq))
-
-		return {'left': np.array(left_input_vector, dtype=float),
-				'right': np.array(right_input_vector, dtype=float)}
-
+		return {'left_input': np.array(left_input_vector, dtype=float),
+				'right_input': np.array(right_input_vector, dtype=float),
+				'left_seq_length': np.array(seq_length_left, dtype=int),
+				'right_seq_length': np.array(seq_length_right, dtype=int),
+				'labels': np.array(text_data['labels'], dtype=int)}
 
 	def get_data(self):
 		word_vector = self.read_word_vector()
