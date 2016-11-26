@@ -11,7 +11,9 @@ VECTOR_DIM = data.vector_dim
 LSTM_SIZE = VECTOR_DIM
 MAX_TIME_STEP = 50
 NUM_CLASS = 3
-LEARNING_RATE = 0.3
+LEARNING_RATE = 1
+HIDDEN1_SIZE = 60
+HIDDEN2_SIZE = 30
 
 def mask_output(output, seq_length):
 	# masking the output vector
@@ -30,11 +32,14 @@ right_seq_length = tf.placeholder(tf.int32, [None])
 
 y_ = tf.placeholder(tf.float32, [None, NUM_CLASS])
 
-weights = tf.Variable(tf.random_normal([LSTM_SIZE*2, NUM_CLASS]))
-biases = tf.Variable(tf.zeros([NUM_CLASS]))
+hidden1_weights = tf.Variable(tf.random_normal([LSTM_SIZE*2, HIDDEN1_SIZE]))
+hidden1_biases = tf.Variable(tf.zeros([HIDDEN1_SIZE]))
 
-right_weights = tf.Variable(tf.random_normal([LSTM_SIZE, NUM_CLASS]))
-right_biases = tf.Variable(tf.zeros([NUM_CLASS]))
+hidden2_weights = tf.Variable(tf.random_normal([HIDDEN1_SIZE, HIDDEN2_SIZE]))
+hidden2_biases = tf.Variable(tf.zeros([HIDDEN2_SIZE]))
+
+weights = tf.Variable(tf.random_normal([HIDDEN2_SIZE, NUM_CLASS]))
+biases = tf.Variable(tf.random_normal([NUM_CLASS]))
 
 with tf.variable_scope('left_lstm'):
 	left_lstm = tf.nn.rnn_cell.BasicLSTMCell(LSTM_SIZE)
@@ -55,7 +60,10 @@ right_outputs = mask_output(right_outputs, right_seq_length)
 
 comb_outputs = tf.concat(1, [left_outputs, right_outputs])
 
-y = tf.nn.softmax(tf.matmul(comb_outputs, weights) + biases)
+hidden1_layer = tf.sigmoid(tf.matmul(comb_outputs, hidden1_weights)+hidden1_biases)
+hidden2_layer = tf.sigmoid(tf.matmul(hidden1_layer, hidden2_weights)+hidden2_biases)
+
+y = tf.nn.softmax(tf.sigmoid(tf.matmul(hidden2_layer, weights) + biases))
 
 loss = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[1]))
 
@@ -79,6 +87,6 @@ with tf.Session() as sess:
 		}
 		sess.run(train_step, feed_dict=batch_feed_dict)
 		acc_val = sess.run(acc, feed_dict=batch_feed_dict)
-		print(acc_val)
+		print('step: %.4d, learning rate: %.2f, acc: %.3f' % (_, LEARNING_RATE, acc_val))
 
 	# print(output)
