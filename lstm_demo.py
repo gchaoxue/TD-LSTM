@@ -11,9 +11,9 @@ VECTOR_DIM = data.vector_dim
 LSTM_SIZE = VECTOR_DIM
 MAX_TIME_STEP = 50
 NUM_CLASS = 3
-LEARNING_RATE = 1
-HIDDEN1_SIZE = 60
-HIDDEN2_SIZE = 30
+LEARNING_RATE = 1.5
+HIDDEN1_SIZE = 50
+HIDDEN2_SIZE = 10
 
 def mask_output(output, seq_length):
 	# masking the output vector
@@ -88,5 +88,15 @@ with tf.Session() as sess:
 		sess.run(train_step, feed_dict=batch_feed_dict)
 		acc_val = sess.run(acc, feed_dict=batch_feed_dict)
 		print('step: %.4d, learning rate: %.2f, acc: %.3f' % (_, LEARNING_RATE, acc_val))
+
+	data_feed = {
+		left_input: data.test['left_input'],
+		right_input: data.test['right_input'],
+		left_seq_length: data.test['left_seq_length'],
+		right_seq_length: data.test['right_seq_length'],
+		y_: data.test['labels']
+	}
+	test_acc = sess.run(acc, feed_dict=data_feed)
+	print('test acc : %.3f' % test_acc)
 
 	# print(output)
