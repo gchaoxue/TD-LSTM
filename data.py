@@ -16,6 +16,7 @@ class Data:
 	word_vec_dir = None
 	train_data_dir = None
 	test_data_dir = None
+	split_text = True
 
 	vector_dim = None
 	max_length_left = None
@@ -31,10 +32,12 @@ class Data:
 	def __init__(self,
 				 word_vec_dir='data/embedding-results/sswe-h.txt',
 				 train_data_dir='data/acl-14-short-data/train.raw',
-				 test_data_dir='data/acl-14-short-data/test.raw'):
+				 test_data_dir='data/acl-14-short-data/test.raw',
+				 split_text=True):
 		self.word_vec_dir = word_vec_dir
 		self.train_data_dir = train_data_dir
 		self.test_data_dir = test_data_dir
+		self.split_text = split_text
 		batch_iter = 0
 
 	# reading small data-set for testing
@@ -99,17 +102,30 @@ class Data:
 				targets = file.readline()
 				label = file.readline()
 				
-				target_index = text.index('$T$')
-				left_text = text[0:target_index+3]
-				right_text = text[target_index:]
+				left_text = []
+				right_text = []
 
-				left_text = left_text.replace('$T$', targets)
-				right_text = right_text.replace('$T$', targets)
+				if self.split_text == True:
+					target_index = text.index('$T$')
+					left_text = text[0:target_index+3]
+					right_text = text[target_index:]
 
-				targets = targets.split()
-				left_text = left_text.split()
-				right_text = right_text.split()
-				right_text.reverse()
+					left_text = left_text.replace('$T$', targets)
+					right_text = right_text.replace('$T$', targets)
+
+					targets = targets.split()
+					left_text = left_text.split()
+					right_text = right_text.split()
+					right_text.reverse()
+				else:
+					text = text.replace('$T$', targets)
+					left_text = text.split()
+					right_text = text.split()
+					right_text.reverse()
+
+				print(left_text)
+				print(right_text)
+				print('=========================================')
 
 				label = int(label)
 
